@@ -216,7 +216,7 @@ impl Display for MinecraftWorld {
         f.write_str(&format!("Seed: {}\n", self.level_dat.random_seed.map(|s| s.to_string()).unwrap_or("???".to_string())))?;
         f.write_str(&format!("Last played: {} (UNIX: {})\n", unix_to_str(self.level_dat.last_played), self.level_dat.last_played))?;
         f.write_str(&format!("Modified: {}\n", "todo"))?; // TODO
-        f.write_str(&format!("Size: {}\n", "todo"))?; // TODO
+        f.write_str(&format!("Size: {:.1} MB\n", fs_extra::dir::get_size(&self.path).unwrap_or(0) as f64 / 1_000_000.0))?;
         f.write_str(&format!("Ticks passed: {} (~{:.2} hours)\n", self.level_dat.time, (self.level_dat.time as f64)/(20.0*3600.0)))?; // TODO: remove?!
         f.write_str(&format!("In-game days passed: {}\n", self.level_dat.day_time as f64 / 24000.0))?;
         f.write_str(&format!("Current time: {} (0 = sunrise, 6000 = midday, 12000 = sunset, 18000 = midnight)\n", self.level_dat.day_time % 24000))?;
