@@ -14,23 +14,95 @@ use std::time::{UNIX_EPOCH, Duration};
 /// An integer indicating the Minecraft version.
 /// Cf. https://minecraft.wiki/w/Data_version
 /// Introduced with version 1.9	(15w32a).
+/// Cf. https://minecraft.wiki/w/Java_Edition_version_history#Full_release for release dates.
 static DATA_VERSIONS: phf::Map<i32, &'static str> = phf_map! {
     // Version 1.21:
-    4189i32 => "1.21.4",
-    4082i32 => "1.21.3",
-    4080i32 => "1.21.2",
-    3955i32 => "1.21.1",
-    3953i32 => "1.21",
+    4189i32 => "1.21.4 - December 3, 2024",
+    4082i32 => "1.21.3 - October 23, 2024",
+    4080i32 => "1.21.2 - October 22, 2024",
+    3955i32 => "1.21.1 - August 8, 2024",
+    3953i32 => "1.21 - June 13, 2024",
 
     // Version 1.20:
-    3839i32 => "1.20.6",
-    3837i32 => "1.20.5",
-    3700i32 => "1.20.4",
-    3698i32 => "1.20.3",
-    3578i32 => "1.20.2",
-    3465i32 => "1.20.1",
-    3463i32 => "1.20",
-}; // TODO...
+    3839i32 => "1.20.6 - April 29, 2024",
+    3837i32 => "1.20.5 - April 23, 2024",
+    3700i32 => "1.20.4 - December 7, 2023",
+    3698i32 => "1.20.3 - December 5, 2023",
+    3578i32 => "1.20.2 - September 21, 2023",
+    3465i32 => "1.20.1 - June 12, 2023",
+    3463i32 => "1.20 - June 7, 2023",
+
+    // Version 1.19:
+    3337i32 => "1.19.4 - March 14, 2023",
+    3218i32 => "1.19.3 - December 7, 2022",
+    3120i32 => "1.19.2 - August 5, 2022",
+    3117i32 => "1.19.1 - July 27, 2022",
+    3105i32 => "1.19 - June 7, 2022",
+
+    // Version 1.18:
+    2975i32 => "1.18.2 - February 28, 2022",
+    2865i32 => "1.18.1 - December 10, 2021",
+    2860i32 => "1.18 - November 30, 2021",
+
+    // Version 1.17:
+    2730i32 => "1.17.1 - July 6, 2021",
+    2724i32 => "1.17 - June 8, 2021",
+
+    // Version 1.16:
+    2586i32 => "1.16.5 - January 15, 2021",
+    2584i32 => "1.16.4 - November 2, 2020",
+    2580i32 => "1.16.3 - September 10, 2020",
+    2578i32 => "1.16.2 - August 11, 2020",
+    2567i32 => "1.16.1 - June 24, 2020",
+    2566i32 => "1.16 - June 23, 2020",
+
+    // Version 1.15:
+    2230i32 => "1.15.2 - January 21, 2020",
+    2227i32 => "1.15.1 - December 17, 2019",
+    2225i32 => "1.15 - December 10, 2019",
+
+    // Version 1.14:
+    1976i32 => "1.14.4 - July 19, 2019",
+    1968i32 => "1.14.3 - June 24, 2019",
+    1963i32 => "1.14.2 - May 27, 2019",
+    1957i32 => "1.14.1 - May 13, 2019",
+    1952i32 => "1.14 - April 23, 2019",
+
+    // Version 1.13:
+    1631i32 => "1.13.2 - October 22, 2018",
+    1628i32 => "1.13.1 - August 22, 2018",
+    1519i32 => "1.13 - July 18, 2018",
+
+    // Version 1.12:
+    1343i32 => "1.12.2 - September 18, 2017",
+    1241i32 => "1.12.1 - August 3, 2017",
+    1139i32 => "1.12 - June 7, 2017",
+
+    // Version 1.11:
+    922i32 => "1.11.2 - December 21, 2016",
+    921i32 => "1.11.1 - December 20, 2016",
+    819i32 => "1.11 - November 14, 2016",
+
+    // Version 1.10:
+    512i32 => "1.10.2 - June 23, 2016",
+    511i32 => "1.10.1 - June 22, 2016",
+    510i32 => "1.10 - June 8, 2016",
+
+    // Version 1.9:
+    184i32 => "1.9.4 - May 10, 2016",
+    183i32 => "1.9.3 - May 10, 2016",
+    176i32 => "1.9.2 - March 30, 2016",
+    175i32 => "1.9.1 - March 30, 2016",
+    169i32 => "1.9 - February 29, 2016",
+
+    // April Fools versions:
+    3824i32 => "April Fools version 2024: Java Edition 24w14potato",
+    3444i32 => "April Fools version 2023: Java Edition 23w13a_or_b",
+    3076i32 => "April Fools version 2022: Java Edition 22w13oneBlockAtATime",
+    2522i32 => "April Fools version 2020: Java Edition 20w14∞",
+    1943i32 => "April Fools version 2019: Java Edition 3D Shareware v1.34",
+    173i32 => "April Fools version 2016: Java Edition 1.RV-Pre1",
+};
 
 /* https://minecraft.wiki/w/.minecraft */
 #[cfg(target_os = "windows")]
@@ -57,7 +129,11 @@ impl Display for MinecraftWorld {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("***** ***** {:?} ***** *****\n", self.path))?;
         if let Some(data_version) = self.level_dat.data_version {
-            f.write_str(&format!("Minecraft version: {} ({})\n", data_version, DATA_VERSIONS.get(&data_version).unwrap_or(&"???")))?;
+            if data_version > *DATA_VERSIONS.keys().max().unwrap() {
+                f.write_str(&format!("Minecraft version: {} (>{})\n", data_version, DATA_VERSIONS.get(DATA_VERSIONS.keys().max().unwrap()).unwrap()))?;
+            } else {
+                f.write_str(&format!("Minecraft version: {} ({})\n", data_version, DATA_VERSIONS.get(&data_version).unwrap_or(&"???")))?;
+            }
         } else {
             f.write_str(&"Minecraft version: <1.9\n".to_string())?;
         }
