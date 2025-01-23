@@ -1,4 +1,5 @@
 use std::{env, fs};
+use std::cmp::min;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -350,6 +351,8 @@ fn main() {
     //      of MinecraftWorlds already found to avoid printing them twice when multiple paths
     //      were given (e.g., first "~/.minecraft" and then "/"):
     let mut paths: Vec<PathBuf> = Vec::new();
+    let mut min_version: i32 = i32::MAX;
+    let mut max_version: i32 = i32::MIN;
     for dir in args {
         println!();
         println!("Walking through {} ...", dir);
@@ -376,6 +379,14 @@ fn main() {
             match MinecraftWorld::new(path) {
                 Ok(mc_world) => {
                     println!("{}", mc_world);
+                    if let Some(version) = mc_world.level_dat.data_version {
+                        if version < min_version {
+                            min_version = version;
+                        }
+                        if version > max_version {
+                            max_version = version;
+                        }
+                    }
                 }
                 Err(err) => {
                     println!("{:?} is invalid: {:?}", path, err.msg);
@@ -387,6 +398,9 @@ fn main() {
     }
 
     println!("Done. {} Minecraft worlds were found.", paths.len());
+    println!();
+    println!("Highest version encountered: {} ({})", max_version, DATA_VERSIONS.get(&max_version).unwrap_or(&"???"));
+    println!("Lowest >=1.9 version encountered: {} ({})", min_version, DATA_VERSIONS.get(&min_version).unwrap_or(&"???"));
     println!();
     // TODO: print out some final statistics (like oldest world, largest world, longest play time, ...)
 }
