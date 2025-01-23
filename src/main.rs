@@ -1,5 +1,5 @@
 use std::{env, fs};
-use std::cmp::min;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -8,9 +8,13 @@ use std::fs::File;
 use std::io::BufReader;
 use flate2::read::GzDecoder;
 use std::io::Read;
+use std::sync::Mutex;
 use chrono::prelude::DateTime;
 use chrono::Utc;
 use std::time::{UNIX_EPOCH, Duration};
+use reqwest::blocking::Client;
+use serde::Deserialize;
+use std::{thread, time};
 
 /// An integer indicating the Minecraft version.
 /// Cf. https://minecraft.wiki/w/Data_version
@@ -119,6 +123,77 @@ fn unix_to_str(unix_timestamp_in_ms: i64) -> String {
     date_time.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+lazy_static::lazy_static! {
+    static ref USERNAME_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
+
+#[derive(Deserialize)]
+struct MinecraftProfile {
+    id: String,
+    name: String,
+}
+// ...as returned by the https://api.minecraftservices.com/minecraft/profile/lookup/<UUID> API!
+
+fn uuid_to_uname(uuid: &str) -> Result<String, String> {  // ToDo: allow user to disable this feature using --no-mojang-api and to alter the timeout using --mojang-api-timeout
+    // https://minecraft.wiki/w/Mojang_API#Query_player's_username
+    //   API: https://api.minecraftservices.com/minecraft/profile/lookup/<UUID>
+    // where <UUID> must be without the minuses ("-")!
+    //
+    // Example GET request:
+    //   https://api.minecraftservices.com/minecraft/profile/lookup/afe703c40a8f4b448301974a3305820d
+    //
+    // Example JSON response:
+    //   {
+    //     "id" : "afe703c40a8f4b448301974a3305820d",
+    //     "name" : "horstder2te"
+    //   }
+
+    // Remove dashes from the UUID:
+    let uuid_no_dashes: String = uuid.replace("-", "");
+
+    // Check the cache first:
+    {
+        let cache = USERNAME_CACHE.lock().unwrap();
+        if let Some(username) = cache.get(&uuid_no_dashes) {
+            return Ok(username.clone());
+        }
+    }
+
+    // Construct the API URL:
+    let url = format!("https://api.minecraftservices.com/minecraft/profile/lookup/{}", uuid_no_dashes);
+
+    // Create a blocking HTTP client with a timeout:
+    let client = Client::builder()
+        .timeout(Duration::from_secs(3)) // Set timeout to 3 seconds
+        .build()
+        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+
+    // Send the GET request:
+    let response = client.get(&url).send()
+        .map_err(|e| format!("HTTP request failed: {}", e))?;
+
+    // Sleep after each GET request to avoid an "HTTP 429 Too Many Requests":
+    thread::sleep(Duration::from_millis(1000));
+
+    // Check for successful response:
+    if response.status().is_success() {
+        // Parse the JSON response:
+        let profile: MinecraftProfile = response.json()
+            .map_err(|e| format!("Failed to parse JSON response: {}", e))?;
+
+        // Update the cache:
+        {
+            let mut cache = USERNAME_CACHE.lock().unwrap();
+            cache.insert(uuid_no_dashes.clone(), profile.name.clone());
+        }
+
+        // Return the username:
+        Ok(profile.name)
+    } else {
+        Err(format!("Failed to fetch username for UUID {}: HTTP {}", uuid, response.status()))
+    }
+}
+
 /// A Minecraft world is a folder that must at least contain a valid "level.dat" file.
 struct MinecraftWorld {
     path: PathBuf,
@@ -148,8 +223,8 @@ impl Display for MinecraftWorld {
         f.write_str(&format!("Difficulty: {} (0 = Peaceful, 1 = Easy, 2 = Normal, 3 = Hard)\n", self.level_dat.difficulty))?;
         f.write_str(&format!("Players: {}\n", self.player_dat.len()))?;
         for player in self.player_dat.iter() {
-            f.write_str(&format!("    - {} @ x={:.2}, y={:.2}, z={:.2} (Health: {:.2}, Food: {})\n", player.uuid, player.pos.0, player.pos.1, player.pos.2, player.health, player.food_level))?;
-        } // TODO: resolve player UUIDs using Mojang API
+            f.write_str(&format!("    - {} ({}) @ x={:.2}, y={:.2}, z={:.2} (Health: {:.2}, Food: {})\n", player.uuid, uuid_to_uname(&player.uuid).unwrap_or("???".to_string()), player.pos.0, player.pos.1, player.pos.2, player.health, player.food_level))?;
+        }
         Ok(())
     }
 }
