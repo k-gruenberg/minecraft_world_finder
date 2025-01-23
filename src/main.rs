@@ -405,7 +405,7 @@ impl NBTFile {
     }
 }
 
-fn main() { // TODO: add --multiplayer-worlds-only filter option
+fn main() { // TODO: add --multiplayer-worlds-only and --singleplayer-worlds-only filter options
     // (1.) Parse command line args or use default values:
     let mut args: Vec<String> = env::args().skip(1).collect();
     if args.len() == 0 {
