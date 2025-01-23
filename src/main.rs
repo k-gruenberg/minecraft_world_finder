@@ -14,7 +14,7 @@ use chrono::Utc;
 use std::time::{UNIX_EPOCH, Duration};
 use reqwest::blocking::Client;
 use serde::Deserialize;
-use std::{thread, time};
+use std::{thread};
 
 /// An integer indicating the Minecraft version.
 /// Cf. https://minecraft.wiki/w/Data_version
@@ -299,12 +299,13 @@ impl PlayerDat {
 
     fn for_each_dat_file_in(folder: &Path) -> Vec<Self> {
         let mut result: Vec<Self> = Vec::new();
-        let files = fs::read_dir(folder).unwrap();
-        for file in files {
-            if let Ok(file) = file {
-                if file.file_name().into_string().unwrap().ends_with(".dat") {
-                    if let Ok(player_dat) = PlayerDat::new(&file.path()) {
-                        result.push(player_dat);
+        if let Ok(files) = fs::read_dir(folder) {
+            for file in files {
+                if let Ok(file) = file {
+                    if file.file_name().into_string().unwrap().ends_with(".dat") {
+                        if let Ok(player_dat) = PlayerDat::new(&file.path()) {
+                            result.push(player_dat);
+                        }
                     }
                 }
             }
