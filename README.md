@@ -32,4 +32,5 @@ $ minecraft_world_finder <FOLDER1> <FOLDER2> <FOLDER3>
 ...
 ```
 
+Folders are searched through in the order given.
 Folders may overlap, even then, each Minecraft world will only be printed once.
