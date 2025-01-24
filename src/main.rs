@@ -433,7 +433,7 @@ fn main() { // TODO: add --multiplayer-worlds-only and --singleplayer-worlds-onl
         println!();
         println!("Walking through {} ...", dir);
         println!();
-        for level_dat_file in WalkDir::new(dir)
+        for level_dat_file in WalkDir::new(dir) // TODO: skip subdirectories that we already traversed? (probably not possible with WalkDir...)
             .into_iter()
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
